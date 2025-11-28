@@ -11,7 +11,7 @@ load_dotenv()
 
 
 try:
-    df = kagglehub.load_dataset(
+    df = kagglehub.dataset_load(
         KaggleDatasetAdapter.PANDAS,
         "miroslavsabo/young-people-survey",
         "responses.csv", 
