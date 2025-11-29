@@ -1,30 +1,29 @@
-#%%
-import kagglehub
-from kagglehub import KaggleDatasetAdapter
-import pandas as pd
-from dotenv import load_dotenv
-import os
+import streamlit as st
+import yfinance as yf
 
+st.title("Financial Dashboard Project")
 
-load_dotenv()
+ticker = st.sidebar.text_input("Enter a Stock Ticker:", "AAPL")
 
+if st.sidebar.button("Analyze Stock"):
 
+    st.write(f"Fetching data for: {ticker}...")
+    stock = yf.Ticker(ticker)
 
-try:
-    df = kagglehub.dataset_load(
-        KaggleDatasetAdapter.PANDAS,
-        "miroslavsabo/young-people-survey",
-        "responses.csv", 
-    )
+    history = stock.history(period="1y")
 
+    if history.empty:
+        st.error(f"Could not find data for {ticker}. Check the spelling.")
+    else:
+        current_price = history["Close"].iloc[-1]
+        st.metric(label="Current Price", value=f"${current_price:.2f}")
 
-    print("\n--- SHAPE ---")
-    print(f"Linhas: {df.shape[0]}")
-    print(f"Colunas: {df.shape[1]}")
+        st.subheader("Price History (1 Year)")
+        st.line_chart(history["Close"])
 
-except Exception as e:
-    print(f"\nErro: {e}")
+        st.subheader("Raw Data")
+        st.dataframe(history.tail())
 
-#%%
-df
-#%%
+        st.subheader("Company Profile")
+        summary = stock.info.get("longBusinessSummary", "No summary available.")
+        st.info(summary)
