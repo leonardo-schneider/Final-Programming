@@ -1,20 +1,24 @@
 import streamlit as st
 import time
 
-# STAGE - SURVEY
-
+################
+# Initial load
+################
 if "stage" not in st.session_state:
     st.session_state["stage"] = "survey"
 
 if "user_profile" not in st.session_state:
     st.session_state["user_profile"] = {}
 
+
+
 def reset_session_state():
     st.session_state["stage"] = "survey"
     st.session_state["user_profile"] = {}
 
-
-
+################
+# Survey stage
+################
 def make_survey_question(question_name, answers):
     return st.radio(
         question_name,
@@ -63,7 +67,9 @@ def render_survey():
             st.session_state["stage"] = "recommending"
             st.rerun()
 
-
+################
+# Processing recommendations stage
+################
 def render_recommending_phase():
     st.title("Generating recommendations...")
 
@@ -86,8 +92,9 @@ def render_recommending_phase():
     st.session_state["stage"] = "chat"
     st.rerun()
 
-
-
+################
+# results and AI chat stage
+################
 def render_agent_chat():
 
     st.title("Your Recommendations")
@@ -105,7 +112,9 @@ def render_agent_chat():
     st.button("Start Over", on_click=reset_session_state)
 
 
-
+################
+# Session stage mapping
+################
 if st.session_state['stage'] == 'survey':
     render_survey()
 
