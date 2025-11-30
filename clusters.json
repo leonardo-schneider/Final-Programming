@@ -1,0 +1,37 @@
+[
+  {
+    "profile": "Cultured, sensitive, and emotional",
+    "why": "High scores in Reading, Theatre, and Art, combined with high Life Struggles and Shopping",
+    "investment_profile": "Moderate Risk / Purpose-Driven",
+    "priority": "Locked assets to prevent impulsive spending or assets with aesthetic value",
+    "examples": ["ESG Funds", "Art Funds", "Pension Plans"]
+  },
+  {
+    "profile": "Rational, academic, and stable",
+    "why": "Dominated by complex interests like Politics, Physics, Documentaries, and Classical Music. Very low anxiety levels",
+    "investment_profile": "Moderate-High Risk / Strategic",
+    "priority": "Fundamentals, efficiency, and long-term rationality",
+    "examples": ["Value Stocks", "Global ETFs", "REITs"]
+  },
+  {
+    "profile": "Frugal, low-profile, and cautious",
+    "why": "Lowest scores in all consumption categories (Shopping, Cars) and social energy (Adrenaline, Dancing)",
+    "investment_profile": "Low Risk / Conservative",
+    "priority": "Capital preservation and safety above all else",
+    "examples": ["Government Bonds", "Fixed Income/CDs", "Gold"]
+  },
+  {
+    "profile": "Mainstream, trendy, and anxious",
+    "why": "High interest in Shopping and Romantic themes. Low interest in complex topics. High Life Struggles",
+    "investment_profile": "Moderate Risk / Trend Follower",
+    "priority": "Simple UX and familiar brand names",
+    "examples": ["Robo-Advisors", "Big Tech Stocks like Apple/Netflix", "Thematic Funds"]
+  },
+  {
+    "profile": "Practical, energetic, and thrill-seeker",
+    "why": "Highest interest in PC, Cars, Action Movies, and Adrenaline Sports. Lowest level of Life Struggles",
+    "investment_profile": "Very High Risk / Speculator",
+    "priority": "High returns, volatility, and technology",
+    "examples": ["Crypto & Altcoins", "Small Caps", "Options Trading"]
+  }
+]
