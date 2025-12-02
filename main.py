@@ -145,7 +145,7 @@ def get_stock_info(tickers: list[str]) -> list[StockInfo]:
 def render_processing_stage():
 
     llm = ChatOpenAI(
-        **get_llm_provider_env_dict(getenv("DEFAULT_PROVIDER")),
+        **get_llm_provider_env_dict(getenv("DEFAULT_LLM_PROVIDER")),
         temperature=0.6,
     )
 
@@ -360,7 +360,7 @@ def render_chat():
                 chat_hist.append(HumanMessage(content=user_message))
 
                 llm = ChatOpenAI(
-                    **get_llm_provider_env_dict(getenv("DEFAULT_PROVIDER")),
+                    **get_llm_provider_env_dict(getenv("DEFAULT_LLM_PROVIDER")),
                     temperature=0.6,
                 )
 
