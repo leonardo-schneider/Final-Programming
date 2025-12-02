@@ -10,12 +10,43 @@ from random import sample
 from json import load as load_json
 from dotenv import load_dotenv
 from os import getenv
-
+import joblib
+import pandas as pd
+import numpy as np
 
 ################
 # Initial load
 ################
 st_f.float_init()
+
+@st.cache_resource
+def load_models():
+    try:
+        kmeans = joblib.load("kmeans_model.pkl")
+        scaler = joblib.load("scaler.pkl")
+        return kmeans, scaler
+    except Exception as e:
+        st.error(f"Error loading models: {e}")
+        return None, None
+
+def predict_cluster(answers: dict, kmeans, scaler) -> int:
+    features = scaler.feature_names_in_
+    means = scaler.mean_
+    
+    
+    user_vector = dict(zip(features, means))
+    
+
+    for feature, value in answers.items():
+        if feature in user_vector:
+            user_vector[feature] = float(value)
+            
+    #  Convert to DataFrame and Scale
+    df = pd.DataFrame([user_vector], columns=features)
+    df_scaled = scaler.transform(df)
+    
+    #  Predict
+    return int(kmeans.predict(df_scaled)[0])
 
 try:
     if not load_dotenv():
@@ -53,39 +84,54 @@ def make_survey_question(question_name, answers) -> st.radio:
         width="stretch",
     )
 
+SURVEY_QUESTIONS = {
+    "Shopping": "How much do you enjoy shopping?",
+    "Reading": "Do you enjoy reading books?",
+    "Romantic": "Do you consider yourself romantic?",
+    "Theatre": "Do you enjoy going to the theatre?",
+    "PC": "How much time do you spend on the PC?",
+    "Cars": "Are you interested in cars?",
+    "Life struggles": "Do you often feel emotional or struggle with life?",
+    "Politics": "Are you interested in politics?",
+    "Economy Management": "Are you interested in economics/management?" 
+}
+
 def render_survey_stage():
-    st.title("Survey")
-    st.write("Take this survey, to help us narrow down recommendations.")
+    st.title("Investor Profiling")
+    st.write("Rate your agreement (1-5) to match with an investment persona.")
+
+    # Load models here (cached)
+    kmeans, scaler = load_models()
+
+    if kmeans is None or scaler is None:
+        st.stop()
 
     with st.form("survey_form"):
-        # We should consider loading these from a file.
-        q0 = make_survey_question(
-            "Question 0",
-            [1,2,3,4,5],
-        )
-        q1 = make_survey_question(
-            "Question 1",
-            [1,2,3,4,5],
-        )
-        q2 = make_survey_question(
-            "Question 2",
-            [1,2,3,4,5],
-        )
-        q3 = make_survey_question(
-            "Question 3",
-            [1,2,3,4,5],
-        )
+        responses = {}
+        
+        
+        for col_name, question in SURVEY_QUESTIONS.items():
+                    st.write(question) 
+                    responses[col_name] = st.radio(
+                        label=question, 
+                        options=[1, 2, 3, 4, 5],
+                        horizontal=True, 
+                        index=2, 
+                        label_visibility="collapsed" 
+                    )
+                    st.write("---")
 
-        submitted_survey = st.form_submit_button("Continue")
+        submitted = st.form_submit_button("Analyze Profile")
 
-        if submitted_survey:
-            st.session_state["user_profile"]["responses"] = {
-                "q0": q0,
-                "q1": q1,
-                "q2": q2,
-                "q3": q3,
-            }
-
+        if submitted:
+            # Save specific responses (for the AI Chat later)
+            st.session_state["user_profile"]["responses"] = responses
+            
+            
+            predicted_id = predict_cluster(responses, kmeans, scaler)
+            st.session_state["user_profile"]["cluster_id"] = predicted_id
+            
+            
             st.session_state["stage"] = "processing"
             st.rerun()
 
@@ -153,19 +199,26 @@ def render_processing_stage():
     progress_bar = st.progress(0)
 
 
-    # Step 1 - Determine cluster
+    
     progress_bar.progress(25, "Mapping responses...")
 
     with open("clusters.json", "r") as clusters_file:
         clusters = load_json(clusters_file)
 
-    # REPLACE WITH CLUSTER MAPPING WHEN READY.
-    st.session_state["user_profile"]["cluster_result"] = sample(clusters, 1)[0]
+    # getting cluster
+    c_id = st.session_state["user_profile"].get("cluster_id", 0)
+    if 0 <= c_id < len(clusters):
+        st.session_state["user_profile"]["cluster_result"] = clusters[c_id]
+    else:
+        st.error(f"Error: Calculated Cluster ID {c_id} is out of range.")
+        st.stop()
 
-    # Step 2 - Get AI recommendation
+    #Get AI recommendation
     progress_bar.progress(50, "Consulting recommender...")
 
     cr = st.session_state.get("user_profile").get("cluster_result")
+
+    specific_answers = st.session_state["user_profile"].get("responses", {})
 
     # We should consider loading this from another file.
     st.session_state.get("chat_history").append(SystemMessage(content=f"""
@@ -174,6 +227,7 @@ def render_processing_stage():
         
         This user's result was:
         - Profile: {cr["profile"]}
+        - User Specific Answers (1-5 scale): {specific_answers} 
         - Why: {cr["why"]}
         - Investment Profile: {cr["investment_profile"]}
         - Priority: {cr["priority"]}
