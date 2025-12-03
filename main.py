@@ -84,17 +84,6 @@ def make_survey_question(question_name, answers) -> st.radio:
         width="stretch",
     )
 
-SURVEY_QUESTIONS = {
-    "Shopping": "How much do you enjoy shopping?",
-    "Reading": "Do you enjoy reading books?",
-    "Romantic": "Do you consider yourself romantic?",
-    "Theatre": "Do you enjoy going to the theatre?",
-    "PC": "How much time do you spend on the PC?",
-    "Cars": "Are you interested in cars?",
-    "Life struggles": "Do you often feel emotional or struggle with life?",
-    "Politics": "Are you interested in politics?",
-    "Economy Management": "Are you interested in economics/management?" 
-}
 
 def render_survey_stage():
     st.title("Investor Profiling")
@@ -106,11 +95,18 @@ def render_survey_stage():
     if kmeans is None or scaler is None:
         st.stop()
 
+    try:
+        with open("questions.json", "r") as f:
+            survey_questions = load_json(f)
+    except FileNotFoundError:
+        st.error("Error: questions.json file not found.")
+        st.stop()
+
     with st.form("survey_form"):
         responses = {}
         
         
-        for col_name, question in SURVEY_QUESTIONS.items():
+        for col_name, question in survey_questions.items():
                     st.write(question) 
                     responses[col_name] = st.radio(
                         label=question, 
@@ -147,6 +143,7 @@ class StockInfo:
     price_to_earnings: float | None
     history: DataFrame | None
     description: str
+    news: list | None = None
 
 def get_llm_provider_env_dict(provider: str) -> dict[str, str]:
     provider = provider.upper()
@@ -165,7 +162,29 @@ def get_stock_info(tickers: list[str]) -> list[StockInfo]:
             if stock_name is None:
                 raise ValueError(f"No stock found for {ticker}.")
 
-            hist = stock.history("1y").rename(columns={"Close": "Price"})
+            hist = stock.history("5y").rename(columns={"Close": "Price"})
+            #Trying to get the info if it fails get the last historic value
+            current_price = stock.info.get("currentPrice")
+            if current_price is None:
+                current_price = stock.info.get("regularMarketPrice")
+            if current_price is None:
+                current_price = stock.info.get("navPrice")
+
+
+            if (current_price is None or str(current_price) == "nan") and not hist.empty:
+                last_valid = hist["Price"].dropna().iloc[-1]
+                current_price = float(last_valid)
+
+            #Treating the news data (it was showing 'No title")
+            clean_news = []
+            if hasattr(stock, "news") and stock.news:
+                for item in stock.news:
+                    # Trying title if not go to 'headline'
+                    title = item.get('title', item.get('headline', ''))
+                    
+
+                    if title and title != "No Title":
+                        clean_news.append(item)
 
             stocks.append(StockInfo(
                 name = stock_name,
@@ -177,6 +196,7 @@ def get_stock_info(tickers: list[str]) -> list[StockInfo]:
                     "longBusinessSummary",
                     "No description available.",
                 ),
+                news = clean_news[:3],
             ))
 
         except Exception as e:
@@ -307,28 +327,89 @@ def prepare_chat():
     ))
     return None
 
+def calculate_roi(history_df, investment_amount=10000, start_year="2020"):
+    
+    try:
+        start_date = f"{start_year}-01-01"
+        mask = history_df.index >= start_date
+        df_filtered = history_df.loc[mask]
+        
+        if df_filtered.empty:
+            return None, None
+
+        start_price = df_filtered.iloc[0]["Price"]
+        current_price = df_filtered.iloc[-1]["Price"]
+        
+        shares = investment_amount / start_price
+        current_value = shares * current_price
+        return current_value, start_price
+    except Exception:
+        return None, None
+
 def render_stock(stock: StockInfo):
-    st.subheader(stock.name)
-    info_tuples = [
-        ("Ticker", stock.ticker_symbol, "left"),
-        ("Price", stock.price, "center"),
-        ("Price to Earnings", stock.price_to_earnings, "right"),
-    ]
-    for (label, data, alignment), col in zip(info_tuples, st.columns(3)):
-        if data is not None:
-            col.markdown(f"""
-                <div style='text-align: {alignment};'>
-                    {label}: {data}
-                </div>
-                """,
-                 unsafe_allow_html=True,
-             )
+    with st.container(border=True):
+        st.subheader(f"{stock.name} ({stock.ticker_symbol})")
+        col_chart, col_data = st.columns([0.7, 0.3], gap="medium")
+        
+        with col_chart:
+            if stock.history is not None:
+                st.plotly_chart(
+                    px.line(stock.history, y="Price"), 
+                    use_container_width=True
+                )
+            else:
+                st.warning("No history data available.")
 
-    if stock.history is not None:
-        st.plotly_chart(px.line(stock.history, y="Price"))
+            with st.expander("Company Description"):
+                st.write(stock.description)
 
-    with st.expander("Business Summary"):
-        st.write(stock.description)
+
+        with col_data:
+            st.markdown("Market Data")
+            
+            st.metric("Current Price", f"${stock.price:,.2f}" if stock.price else "N/A")
+            st.metric("P/E Ratio", f"{stock.price_to_earnings:.2f}" if stock.price_to_earnings else "N/A")
+            
+            st.divider() 
+            
+            st.markdown(" If you invested in 2020: ")
+            
+            if stock.history is not None:
+                final_val, start_price = calculate_roi(stock.history)
+                
+                if final_val:
+                    
+                    color = "green" if final_val >= 10000 else "red"
+                    delta = f"{((final_val - 10000) / 10000) * 100:.1f}%"
+                    
+                    st.metric(
+                        label="Your $10k would be:", 
+                        value=f"${final_val:,.2f}", 
+                        delta=delta
+                    )
+                    st.caption(f"Entry Price (2020): ${start_price:.2f}")
+                else:
+                    st.info("Not enough data since 2020.")
+    with st.expander("📰 Latest News & Company Info", expanded=False):
+        col_desc, col_news = st.columns([0.5, 0.5], gap="large")
+            
+        with col_desc:
+            st.markdown("**Business Summary**")
+            st.caption(stock.description)
+                
+        with col_news:
+            st.markdown("**Related News**")
+            if stock.news:
+                for item in stock.news[:3]:
+                    title = item.get('title', 'No Title')
+                    link = item.get('link', '#')
+                    publisher = item.get('publisher', 'Unknown')
+                        
+                    st.markdown(f"• [{title}]({link})")
+                    st.caption(f"Source: {publisher}")
+            else:
+                st.info("No recent news found.")
+
 
 def render_chat_open_button():
     hidden = """
