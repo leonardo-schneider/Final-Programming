@@ -1,18 +1,17 @@
-import streamlit as st
-import streamlit_float as st_f
-from langchain_openai import ChatOpenAI
-from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from dataclasses import dataclass
-import yfinance as yf
-from pandas import DataFrame
-from plotly import express as px
-from random import sample
 from json import load as load_json
-from dotenv import load_dotenv
 from os import getenv
+
 import joblib
 import pandas as pd
-import numpy as np
+import streamlit as st
+import streamlit_float as st_f
+import yfinance as yf
+from dotenv import load_dotenv
+from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
+from langchain_openai import ChatOpenAI
+from pandas import DataFrame
+from plotly import express as px
 
 ################
 # Initial load
