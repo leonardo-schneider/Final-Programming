@@ -14,6 +14,8 @@ from pandas import DataFrame
 from plotly import express as px
 
 import finnhub as fh
+from datetime import timedelta, date, datetime
+from typing import Any
 
 ################
 # Initial load
@@ -144,7 +146,7 @@ class StockInfo:
     price_to_earnings: float | None
     history: DataFrame | None
     description: str
-    news: list | None = None
+    news: list[dict[str, Any]] | None = None
 
 def get_llm_provider_env_dict(provider: str) -> dict[str, str]:
     provider = provider.upper()
@@ -153,6 +155,15 @@ def get_llm_provider_env_dict(provider: str) -> dict[str, str]:
         api_key=getenv(f"{provider}_API_KEY"),
         model=getenv(f"{provider}_MODEL"),
     )
+
+@st.cache_data(ttl=300)
+def get_finnhub_news(ticker: str) -> list[dict[str, Any]]:
+    fh_client = fh.Client(api_key=getenv("FINNHUB_API_KEY"))
+
+    today = date.today().isoformat()
+    past = (date.today() - timedelta(days=7)).isoformat()
+
+    return fh_client.company_news(ticker, _from=past, to=today)
 
 def get_stock_info(tickers: list[str]) -> list[StockInfo]:
     stocks = []
@@ -176,16 +187,6 @@ def get_stock_info(tickers: list[str]) -> list[StockInfo]:
                 last_valid = hist["Price"].dropna().iloc[-1]
                 current_price = float(last_valid)
 
-            #Treating the news data (it was showing 'No title")
-            clean_news = []
-            if hasattr(stock, "news") and stock.news:
-                for item in stock.news:
-                    # Trying title if not go to 'headline'
-                    title = item.get('title', item.get('headline', ''))
-                    
-
-                    if title and title != "No Title":
-                        clean_news.append(item)
 
             stocks.append(StockInfo(
                 name = stock_name,
@@ -196,12 +197,12 @@ def get_stock_info(tickers: list[str]) -> list[StockInfo]:
                 description = stock.info.get(
                     "longBusinessSummary",
                     "No description available.",
-                ),
-                news = clean_news[:3],
+                ).replace("$", "\$"),
+                news = get_finnhub_news(ticker),
             ))
 
         except Exception as e:
-            pass
+            continue
 
     if len(stocks) == 0:
         st.error("Unable to fetch stock data.")
@@ -347,6 +348,54 @@ def calculate_roi(history_df, investment_amount=10000, start_year="2020"):
     except Exception:
         return None, None
 
+def render_finnhub_news_cards(company_news: list[dict[str, Any]]):
+    # attributes = ["datetime", "source", "headline", "summary", "url"]
+    for article in company_news:
+
+        # Unpack into local.
+        # `or None` turns empty strings into None.
+        headline = article.get("headline", None) or None
+        if headline is None:
+            continue
+
+        timestamp = article.get("datetime", None)
+        source = article.get("source", None) or None
+        summary = article.get("summary", None) or None
+        url = article.get("url", None) or None
+
+        headline = headline.replace("$", "\$")
+
+        if timestamp is not None:
+            date_str = datetime\
+                .fromtimestamp(float(timestamp))\
+                .strftime("%Y-%m-%d %H:%M:%S")
+        else:
+            date_str = None
+
+        with st.container(
+            border=True,
+            width=320,
+            height=240,
+            gap=None
+        ):
+            with st.container(border=False, gap=None):
+                if url is not None:
+                    st.markdown(f"##### [{headline}]({url})")
+                else:
+                    st.markdown(f"##### {headline}")
+
+                source_date = " @ ".join(
+                    data for data in (source, date_str) if data is not None
+                ).replace("$", "\$")
+
+                if source_date != "":
+                    st.caption(source_date)
+
+            with st.container(border=False, gap=None):
+                if summary is not None:
+                    st.markdown(summary.replace("$", "\$"))
+
+
 def render_stock(stock: StockInfo):
     with st.container(border=True):
         st.subheader(f"{stock.name} ({stock.ticker_symbol})")
@@ -360,9 +409,6 @@ def render_stock(stock: StockInfo):
                 )
             else:
                 st.warning("No history data available.")
-
-            with st.expander("Company Description"):
-                st.write(stock.description)
 
 
         with col_data:
@@ -379,7 +425,7 @@ def render_stock(stock: StockInfo):
                 final_val, start_price = calculate_roi(stock.history)
                 
                 if final_val:
-                    
+
                     delta = f"{((final_val - 10000) / 10000) * 100:.1f}%"
                     
                     st.metric(
@@ -390,23 +436,19 @@ def render_stock(stock: StockInfo):
                     st.caption(f"Entry Price (2020): ${start_price:.2f}")
                 else:
                     st.info("Not enough data since 2020.")
-    with st.expander("📰 Latest News & Company Info", expanded=False):
-        col_desc, col_news = st.columns([0.5, 0.5], gap="large")
-            
-        with col_desc:
-            st.markdown("**Business Summary**")
+
+        with st.expander("Business Summary"):
             st.caption(stock.description)
-                
-        with col_news:
-            st.markdown("**Related News**")
+        with st.expander("📰 Latest News", expanded=False):
             if stock.news:
-                for item in stock.news[:3]:
-                    title = item.get('title', 'No Title')
-                    link = item.get('link', '#')
-                    publisher = item.get('publisher', 'Unknown')
-                        
-                    st.markdown(f"• [{title}]({link})")
-                    st.caption(f"Source: {publisher}")
+                with st.container(
+                        border=False,
+                        horizontal=True,
+                        horizontal_alignment="center",
+                        gap="small",
+                        height=700
+                ):
+                    render_finnhub_news_cards(stock.news)
             else:
                 st.info("No recent news found.")
 
@@ -457,9 +499,6 @@ def render_chat():
             <style>
                 div[data-testid="stChatMessage"] {
                     padding: 0;
-                }
-                div[data-testid="stVerticalBlock"]:has(div[data-testid="stChatMessage"]) div[data-testid="stChatMessage"]{
-                    gap: 0.5rem;
                 }
             </style>
         """, unsafe_allow_html=True)
@@ -528,9 +567,9 @@ def render_recommendation_stage():
 
     st.title("Your Recommendations")
 
-    for stock in st.session_state.get("stocks"):
-        st.divider()
-        render_stock(stock)
+    with st.container(gap="large"):
+        for stock in st.session_state.get("stocks"):
+            render_stock(stock)
 
     render_start_over_button()
 
