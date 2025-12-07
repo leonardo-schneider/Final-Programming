@@ -13,6 +13,8 @@ from langchain_openai import ChatOpenAI
 from pandas import DataFrame
 from plotly import express as px
 
+import finnhub as fh
+
 ################
 # Initial load
 ################
@@ -378,7 +380,6 @@ def render_stock(stock: StockInfo):
                 
                 if final_val:
                     
-                    color = "green" if final_val >= 10000 else "red"
                     delta = f"{((final_val - 10000) / 10000) * 100:.1f}%"
                     
                     st.metric(
