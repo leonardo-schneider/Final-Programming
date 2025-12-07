@@ -1,7 +1,10 @@
 from dataclasses import dataclass
+from datetime import timedelta, date, datetime
 from json import load as load_json
 from os import getenv
+from typing import Any
 
+import finnhub as fh
 import joblib
 import pandas as pd
 import streamlit as st
@@ -12,10 +15,6 @@ from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from langchain_openai import ChatOpenAI
 from pandas import DataFrame
 from plotly import express as px
-
-import finnhub as fh
-from datetime import timedelta, date, datetime
-from typing import Any
 
 ################
 # Initial load
