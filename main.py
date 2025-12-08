@@ -146,6 +146,8 @@ class StockInfo:
     history: DataFrame | None
     description: str
     news: list[dict[str, Any]] | None = None
+    dividend_yield: float | None = None
+    volume: int | None = None
 
 def get_llm_provider_env_dict(provider: str) -> dict[str, str]:
     provider = provider.upper()
@@ -174,14 +176,14 @@ def get_stock_info(tickers: list[str]) -> list[StockInfo]:
                 raise ValueError(f"No stock found for {ticker}.")
 
             hist = stock.history("5y").rename(columns={"Close": "Price"})
-            #Trying to get the info if it fails get the last historic value
+            
             current_price = stock.info.get("currentPrice")
             if current_price is None:
                 current_price = stock.info.get("regularMarketPrice")
             if current_price is None:
                 current_price = stock.info.get("navPrice")
 
-
+            # Final check
             if (current_price is None or str(current_price) == "nan") and not hist.empty:
                 last_valid = hist["Price"].dropna().iloc[-1]
                 current_price = float(last_valid)
@@ -190,8 +192,10 @@ def get_stock_info(tickers: list[str]) -> list[StockInfo]:
             stocks.append(StockInfo(
                 name = stock_name,
                 ticker_symbol = ticker,
-                price = stock.info.get("currentPrice", None),
+                price = current_price,
                 price_to_earnings = stock.info.get("trailingPE", None),
+                dividend_yield = stock.info.get("dividendYield", None),
+                volume = stock.info.get("volume") or stock.info.get("regularMarketVolume"),
                 history = hist[["Price"]] if len(hist) > 0 else None,
                 description = stock.info.get(
                     "longBusinessSummary",
@@ -414,7 +418,32 @@ def render_stock(stock: StockInfo):
             st.markdown("Market Data")
             
             st.metric("Current Price", f"${stock.price:,.2f}" if stock.price else "N/A")
-            st.metric("P/E Ratio", f"{stock.price_to_earnings:.2f}" if stock.price_to_earnings else "N/A")
+            if stock.price_to_earnings:
+                # if it is a regular company (AAPL)
+                st.metric("P/E Ratio", f"{stock.price_to_earnings:.2f}", help="Price divided by Earnings. Lower values suggest the stock is cheap (Value Investing). Higher values imply high growth.")
+            
+            elif stock.dividend_yield:
+                # If does not have p/e shows dividend yeld
+                if stock.dividend_yield < 1:
+                                    yield_percent = stock.dividend_yield * 100
+                else:
+                    yield_percent = stock.dividend_yield    
+                st.metric("Dividend Yield", f"{yield_percent:.2f}%", help="Annual return from dividends.")
+            
+            elif stock.volume:
+                # crypto or gold
+                vol_str = f"{stock.volume:,.0f}"
+                # Formating billions or millions to fit in the screen
+                if stock.volume > 1_000_000_000:
+                    vol_str = f"{stock.volume/1_000_000_000:.1f}B"
+                elif stock.volume > 1_000_000:
+                    vol_str = f"{stock.volume/1_000_000:.1f}M"
+                
+                st.metric("24h Volume", vol_str, help="Trading volume. High volume = High liquidity/interest.")
+            
+            else:
+                st.metric("Valuation", "N/A")
+
             
             st.divider() 
             
