@@ -301,34 +301,25 @@ def prepare_chat():
     if not st.session_state.get("is_first_chat_render", True):
         return None
 
+    try:
+        with open("prompt_tenets.txt", "r") as f:
+            prompt_tenets = f.read()
+    except Exception as e:
+        st.error("Unable to fetch files necessary for the AI agent.")
+        st.stop()
+
     st.session_state["is_first_chat_render"] = False
 
     st.session_state.get("chat_history").append(SystemMessage(
-        # Removed line-width limitation.
-        # I had to alter this for the current commit.
-        # Next commit will move this to its own file.
         content=f"""
-            Following that last message, you recommended to the user the following stocks: 
+            You recommended to the user the following stocks: 
             {", ".join(s.name for s in st.session_state.get("stocks"))}
-            
-            Follow these behavioral guidelines as closely as possible:
-            
-            - Continue to assist the user as you are able. If you don't have access to some information, let the user know.
-            - If the user doesn't want to speak, just let them know they can speak to you when they wish.
-            - Don't recommend any more stocks. If the user wants new recommendations, instruct them to refresh the application.
-            - Keep answers concise so you can get rapid feedback from the user.
-            - Try to keep things amicable.
-            - Don't try to get fancy with formatting. The renderer is very simple.
-            - When not writing LaTeX, escape dollar signs with a double backslash.
-            - When writing LaTeX, delimit it with dollar signs. Use no other method for LaTeX delimiting. eg: $$ax^{{2}} + bx + c = 0$$ for all LaTeX.
-            - Try to avoid nesting formatting such as lists and line breaks inside tables.
-            - Make sure your responses are conversational in nature, unless the user explicitly requests otherwise.
-            - Finally, please avoid saying something which might offend the user. The descriptions of the profile clusters aren't flattering.
-            
-            Additional Information:
-            
-            - The chat window is fairly small (about 400px width by 500px height).
         """,
+    ))
+
+
+    st.session_state.get("chat_history").append(SystemMessage(
+        content=prompt_tenets,
     ))
 
     st.session_state.get("chat_history").append(AIMessage(
