@@ -11,6 +11,8 @@ import streamlit as st
 import streamlit_float as st_f
 import yfinance as yf
 from dotenv import load_dotenv
+from langchain.agents import create_agent
+from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from langchain_openai import ChatOpenAI
 from pandas import DataFrame
@@ -298,27 +300,30 @@ def prepare_chat():
     st.session_state["is_first_chat_render"] = False
 
     st.session_state.get("chat_history").append(SystemMessage(
+        # Removed line-width limitation.
+        # I had to alter this for the current commit.
+        # Next commit will move this to its own file.
         content=f"""
-            Following that last message, you recommended to the user the
-            following stocks: 
+            Following that last message, you recommended to the user the following stocks: 
             {", ".join(s.name for s in st.session_state.get("stocks"))}
-
-            Don't recommend any more stocks. If the user wants new
-            recommendations, instruct them to refresh the application.
             
-            Continue to assist the user as you are able. If you don't have
-            access to some information, let the user know. Keep answers concise
-            so you can get rapid feedback from the user. Try to keep things
-            amicable. Don't try to get fancy with formatting. The renderer is
-            very simple. Try to avoid nesting formatting such as lists and
-            line breaks inside tables. Of great importance is that the chat
-            window is fairly small (about 400px width by 500px height). 
+            Follow these behavioral guidelines as closely as possible:
             
-            Make sure your responses are conversational in nature, unless
-            explicitly asked to do otherwise by the user.
+            - Continue to assist the user as you are able. If you don't have access to some information, let the user know.
+            - If the user doesn't want to speak, just let them know they can speak to you when they wish.
+            - Don't recommend any more stocks. If the user wants new recommendations, instruct them to refresh the application.
+            - Keep answers concise so you can get rapid feedback from the user.
+            - Try to keep things amicable.
+            - Don't try to get fancy with formatting. The renderer is very simple.
+            - When not writing LaTeX, escape dollar signs with a double backslash.
+            - When writing LaTeX, delimit it with dollar signs. Use no other method for LaTeX delimiting. eg: $$ax^{{2}} + bx + c = 0$$ for all LaTeX.
+            - Try to avoid nesting formatting such as lists and line breaks inside tables.
+            - Make sure your responses are conversational in nature, unless the user explicitly requests otherwise.
+            - Finally, please avoid saying something which might offend the user. The descriptions of the profile clusters aren't flattering.
             
-            Finally, please avoid saying something which might offend the user.
-            The descriptions of the profile clusters aren't flattering. 
+            Additional Information:
+            
+            - The chat window is fairly small (about 400px width by 500px height).
         """,
     ))
 
@@ -451,70 +456,44 @@ def render_stock(stock: StockInfo):
             else:
                 st.info("No recent news found.")
 
-
-def render_chat_open_button():
-    hidden = """
-        display: none !important;
-    """
-    displayed = """
-        position: fixed;
-        bottom: 15px;
-        right: 15px;
-        z-index: 9999;
-        width: fit-content;
-    """
-
-    container = st.container()
-    with container:
-        if st.button("AI Assistant"):
-            st.session_state["is_chat_open"] = True
-            st.rerun()
-    css = displayed if not st.session_state.get("is_chat_open", True) else hidden
-    container.float(css)
-
 def render_chat():
-    hidden = """
-        display: none !important;
-    """
-    displayed = """
-        position: fixed;
-        bottom: 15px;
-        right: 15px;
-        width: 450px;
-        max-height: 80vh;
-        background-color: hsl(from var(--default-backgroundColor) h s l / 0.95);
-        border: 1px solid rgba(128, 128, 128, 0.2);
-        border-radius: 12px;
-        box-shadow: 0px 4px 12px rgba(0,0,0,0.15);
-        z-index: 9999;
-        display: flex;
-        flex-direction: column;
-        padding: 10px;
-        overflow: hidden;
-    """
 
     # Inject CSS
-    st.markdown("""
-            <style>
-                div[data-testid="stChatMessage"] {
-                    padding: 0;
-                }
-            </style>
-        """, unsafe_allow_html=True)
+    st.markdown(
+        """
+        <style>
+        /* Open and close button */
+        [data-testid="stPopover"] {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            width: auto;
+            z-index: 9999;
+        }
+        
+        /* Popover window */
+        [data-baseweb="popover"] {
+            width: 40vw;
+            z-index: 9999;
+            padding: 5px;
+            opacity: 0.975;
+        }
+        
+        /* Chat messages */
+        [data-testid="stChatMessage"] {
+            padding: 5px;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
 
     prepare_chat()
-
     chat_hist = st.session_state.get("chat_history")
 
-    container = st.container()
-    with container:
-        title_bar, button_bar = st.columns([0.9, 0.10])
-        title_bar.markdown("#### AI Assistant")
-        if button_bar.button("—"):
-            st.session_state["is_chat_open"] = False
-            st.rerun()
-
-        messages_container = st.container(height=450, border=False)
+    popover = st.popover(label="AI Assistant", icon=":material/smart_toy:", type="secondary")
+    with popover:
+        messages_container = st.container(height=450, border=False, gap=None)
 
         with messages_container:
             for message in chat_hist:
@@ -526,32 +505,45 @@ def render_chat():
                     case HumanMessage():
                         st.chat_message("user").write(message.content)
 
-        # Font-Awesome icons are annoying to render with Streamlit.
         if user_message := st.chat_input("⌨️"):
+
+            user_message = user_message.replace("$", "\$")
+            chat_hist.append(HumanMessage(content=user_message))
+
             with messages_container:
-                st.chat_message("user").write(user_message)
-                chat_hist.append(HumanMessage(content=user_message))
+                st.chat_message("user").write(user_message.replace("$", "\$"))
 
-                llm = ChatOpenAI(
-                    **get_llm_provider_env_dict(getenv("DEFAULT_LLM_PROVIDER")),
-                    temperature=0.6,
-                )
+            search_tool = TavilySearchResults(max_results=2)
+            tools = [search_tool]
 
+            llm = ChatOpenAI(
+                **get_llm_provider_env_dict(getenv("DEFAULT_LLM_PROVIDER")),
+                temperature=0.6,
+            )
+
+            agent_app = create_agent(model=llm, tools=tools)
+
+            with messages_container:
                 with st.chat_message("assistant"):
-                    response = st.write_stream(llm.stream(chat_hist))
+                    # This container is needed to suppress a ghosting bug in
+                    # Streamlit.
+                    with st.container():
+                        with st.spinner("", show_time=True):
+                            response = agent_app.invoke({"messages": chat_hist})
 
-                    chat_hist.append(AIMessage(content=response))
+                            final_answer = response["messages"][-1].content
+                            st.write(final_answer)
 
-    css = displayed if st.session_state.get("is_chat_open", True) else hidden
-    container.float(css)
+                            chat_hist.append(AIMessage(content=final_answer))
+
 
 def render_start_over_button():
     css = """
         position: fixed;
-        bottom: 15px;
-        left: 15px;
+        bottom: 25px;
+        left: 25px;
         z-index: 9999;
-        width: fit-content;
+        width: auto;
     """
 
     container = st.container()
@@ -571,10 +563,6 @@ def render_recommendation_stage():
             render_stock(stock)
 
     render_start_over_button()
-
-    if "is_chat_open" not in st.session_state:
-        st.session_state["is_chat_open"] = True
-    render_chat_open_button()
     render_chat()
 
 
