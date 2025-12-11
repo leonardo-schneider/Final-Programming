@@ -5,8 +5,6 @@ from os import getenv
 from typing import Any
 
 import finnhub as fh
-import joblib
-import pandas as pd
 import streamlit as st
 import streamlit_float as st_f
 import yfinance as yf
