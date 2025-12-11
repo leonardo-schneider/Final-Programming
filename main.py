@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import timedelta, date, datetime
-from json import load as load_json
+from json import load as load_json, dumps as dump_json_str
 from os import getenv
 from typing import Any
 
@@ -22,35 +22,6 @@ from plotly import express as px
 # Initial load
 ################
 st_f.float_init()
-
-@st.cache_resource
-def load_models():
-    try:
-        kmeans = joblib.load("kmeans_model.pkl")
-        scaler = joblib.load("scaler.pkl")
-        return kmeans, scaler
-    except Exception as e:
-        st.error(f"Error loading models: {e}")
-        return None, None
-
-def predict_cluster(answers: dict, kmeans, scaler) -> int:
-    features = scaler.feature_names_in_
-    means = scaler.mean_
-    
-    
-    user_vector = dict(zip(features, means))
-    
-
-    for feature, value in answers.items():
-        if feature in user_vector:
-            user_vector[feature] = float(value)
-            
-    #  Convert to DataFrame and Scale
-    df = pd.DataFrame([user_vector], columns=features)
-    df_scaled = scaler.transform(df)
-    
-    #  Predict
-    return int(kmeans.predict(df_scaled)[0])
 
 try:
     if not load_dotenv():
@@ -90,48 +61,43 @@ def make_survey_question(question_name, answers) -> st.radio:
 
 
 def render_survey_stage():
-    st.title("Investor Profiling")
-    st.write("Rate your agreement (1-5) to match with an investment persona.")
-
-    # Load models here (cached)
-    kmeans, scaler = load_models()
-
-    if kmeans is None or scaler is None:
-        st.stop()
-
     try:
-        with open("questions.json", "r") as f:
-            survey_questions = load_json(f)
+        with open("survey_traits.json", "r") as f:
+            survey = {item.get("factor_id"):item.get("trait") for item in load_json(f)}
     except FileNotFoundError:
         st.error("Error: questions.json file not found.")
         st.stop()
 
+    st.title("Financial Personality Survey")
+    st.write("Rate to how much you agree with each statement.")
+    st.markdown("""
+        1. Strongly Disagree
+        2. Somewhat Disagree
+        3. Neither Disagree nor Agree
+        4. Somewhat Agree
+        5. Strongly Agree
+    """)
+
     with st.form("survey_form"):
         responses = {}
         
-        
-        for col_name, question in survey_questions.items():
-                    st.write(question) 
-                    responses[col_name] = st.radio(
-                        label=question, 
-                        options=[1, 2, 3, 4, 5],
-                        horizontal=True, 
-                        index=2, 
-                        label_visibility="collapsed" 
-                    )
-                    st.write("---")
+        for col_name, question in survey.items():
+            st.write(question)
+            responses[col_name] = st.radio(
+                label=question,
+                options=[1, 2, 3, 4, 5],
+                horizontal=True,
+                index=2,
+                label_visibility="collapsed"
+            )
+            st.write("---")
 
         submitted = st.form_submit_button("Analyze Profile")
 
         if submitted:
             # Save specific responses (for the AI Chat later)
             st.session_state["user_profile"]["responses"] = responses
-            
-            
-            predicted_id = predict_cluster(responses, kmeans, scaler)
-            st.session_state["user_profile"]["cluster_id"] = predicted_id
-            
-            
+
             st.session_state["stage"] = "processing"
             st.rerun()
 
@@ -225,43 +191,45 @@ def render_processing_stage():
     st.title("Generating recommendations...")
     progress_bar = st.progress(0)
 
-
-    
     progress_bar.progress(25, "Mapping responses...")
 
-    with open("clusters.json", "r") as clusters_file:
-        clusters = load_json(clusters_file)
-
-    # getting cluster
-    c_id = st.session_state["user_profile"].get("cluster_id", 0)
-    if 0 <= c_id < len(clusters):
-        st.session_state["user_profile"]["cluster_result"] = clusters[c_id]
-    else:
-        st.error(f"Error: Calculated Cluster ID {c_id} is out of range.")
+    try:
+        with open("personality_factors.json", "r") as f:
+            personality_factors = load_json(f)
+    except Exception as e:
+        st.error("Unable to fetch files necessary for the AI agent.")
         st.stop()
 
-    #Get AI recommendation
-    progress_bar.progress(50, "Consulting recommender...")
+    survey_responses = st.session_state["user_profile"]\
+        .get("responses")
 
-    cr = st.session_state.get("user_profile").get("cluster_result")
-
-    specific_answers = st.session_state["user_profile"].get("responses", {})
+    print(survey_responses)
 
     # We should consider loading this from another file.
     st.session_state.get("chat_history").append(SystemMessage(content=f"""
         You are an AI agent meant to recommend tickers to check out for users
-        based on clustering profile from a short survey.
+        based on a short survey. The survey measures personality factors on the
+        following Likert scale:
         
-        This user's result was:
-        - Profile: {cr["profile"]}
-        - User Specific Answers (1-5 scale): {specific_answers} 
-        - Why: {cr["why"]}
-        - Investment Profile: {cr["investment_profile"]}
-        - Priority: {cr["priority"]}
-        - Examples: {", ".join(cr["examples"])}
+        1 - Strongly Disagree
+        2 - Somewhat Disagree
+        3 - Neither Disagree nor Agree 
+        4 - Somewhat Agree
+        5 - Strongly Agree 
         
-        Recommend exactly 3 unique stock tickers that align with this profile
-        description. Return only the stock tickers separated by a space. Format
+        The personality factors are as follow:
+        
+        {dump_json_str(personality_factors, indent=2)}
+        
+        This user's results were:
+        
+        {
+            "\n".join(f"{factor_id}: {response}/5"
+            for (factor_id, response) in survey_responses.items())
+        }
+        
+        Recommend exactly 3 unique stock tickers that align with these survey
+        results. Return only the stock tickers separated by a space. Format
         these for yFinance. Do not add anything else.
         
         Example response: NVDA BRK-B AAPL
@@ -276,7 +244,7 @@ def render_processing_stage():
         st.stop()
 
 
-    # Step 3 - Parse ticker symbols
+    # Parse ticker symbols
     progress_bar.progress(75, "Processing recommendations...")
 
     tickers = list(set(response.content.strip().split()))
@@ -285,7 +253,7 @@ def render_processing_stage():
         st.stop()
 
 
-    # Step 4 - Fetch ticker data
+    # Fetch ticker data
     progress_bar.progress(100, "Fetching market data...")
 
     st.session_state["stocks"] = get_stock_info(tickers)
@@ -404,7 +372,7 @@ def render_stock(stock: StockInfo):
             if stock.history is not None:
                 st.plotly_chart(
                     px.line(stock.history, y="Price"), 
-                    use_container_width=True
+                    width="stretch",
                 )
             else:
                 st.warning("No history data available.")
@@ -576,7 +544,8 @@ def render_start_over_button():
 
 def render_recommendation_stage():
 
-    st.title("Your Recommendations")
+    st.subheader("Based on your results, you might be interested in...")
+    st.divider()
 
     with st.container(gap="large"):
         for stock in st.session_state.get("stocks"):

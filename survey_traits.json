@@ -1,0 +1,56 @@
+[
+  {
+    "factor_id": "factor_0",
+    "title": "The Cultural Connoisseur",
+    "original_items": ["Classical music", "Opera", "Swing, Jazz"],
+    "trait": "I enjoy listening to traditional and complex music genres like Classical, Opera, and Swing/Jazz."
+  },
+  {
+    "factor_id": "factor_1",
+    "title": "The Tech & Thrill Seeker",
+    "original_items": ["PC", "Action", "Cars"],
+    "trait": "I am interested in PC software/hardware and cars, and I enjoy watching action movies."
+  },
+  {
+    "factor_id": "factor_2",
+    "title": "The Social Optimist",
+    "original_items": ["Energy levels", "Number of friends", "Happiness in life"],
+    "trait": "I am full of life and energy, have lots of friends, and am generally happy with my life."
+  },
+  {
+    "factor_id": "factor_3",
+    "title": "The Anxious Observer",
+    "original_items": ["Storm", "Rats", "Snakes"],
+    "trait": "I am afraid of storms (thunder/lightning), rats/mice, and snakes."
+  },
+  {
+    "factor_id": "factor_4",
+    "title": "The Status Strategist",
+    "original_items": ["Spending on looks", "Knowing the right people", "Branded clothing"],
+    "trait": "I spend a lot on my appearance and branded clothing, and I make sure to connect with the right people."
+  },
+  {
+    "factor_id": "factor_5",
+    "title": "The Romantic Dreamer",
+    "original_items": ["Fantasy/Fairy tales", "Animated", "Romantic"],
+    "trait": "I enjoy watching fantasy/fairy tales, animated cartoons, and romantic movies."
+  },
+  {
+    "factor_id": "factor_6",
+    "title": "The Prudent Planner",
+    "original_items": ["Prioritising workload", "Reliability", "Thinking ahead"],
+    "trait": "I am reliable at work/school, I prioritize my tasks, and I always think ahead."
+  },
+  {
+    "factor_id": "factor_7",
+    "title": "The Counter-Culture Rebel",
+    "original_items": ["Rock", "Punk", "Metal or Hardrock"],
+    "trait": "I enjoy listening to loud, high-energy music like Rock, Punk, and Metal."
+  },
+  {
+    "factor_id": "factor_8",
+    "title": "The Empirical Analyst",
+    "original_items": ["Biology", "Chemistry", "Medicine"],
+    "trait": "I am interested in natural sciences, specifically Biology, Chemistry, and Medicine."
+  }
+]
