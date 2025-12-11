@@ -203,8 +203,6 @@ def render_processing_stage():
     survey_responses = st.session_state["user_profile"]\
         .get("responses")
 
-    print(survey_responses)
-
     # We should consider loading this from another file.
     st.session_state.get("chat_history").append(SystemMessage(content=f"""
         You are an AI agent meant to recommend tickers to check out for users
@@ -230,13 +228,26 @@ def render_processing_stage():
         
         Recommend exactly 3 unique stock tickers that align with these survey
         results. Return only the stock tickers separated by a space. Format
-        these for yFinance. Do not add anything else.
+        these for yFinance. Do not add anything else. If your are unsure what a
+        specific ticker symbol is, you can use Tavily to search for it.
         
         Example response: NVDA BRK-B AAPL
     """))
 
+    search_tool = TavilySearchResults(max_results=2)
+    tools = [search_tool]
+
+    llm = ChatOpenAI(
+        **get_llm_provider_env_dict(getenv("DEFAULT_LLM_PROVIDER")),
+        temperature=0.6,
+    )
+
+    agent_app = create_agent(model=llm, tools=tools)
+    chat_hist = st.session_state.get("chat_history")
+
     try:
-        response = llm.invoke(st.session_state.get("chat_history"))
+        response = agent_app.invoke({"messages": chat_hist})
+        response = response["messages"][-1]
 
     # Errors will be handled specifically if there is time later.
     except Exception as e:
