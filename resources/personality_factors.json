@@ -1,0 +1,176 @@
+[
+  {
+    "factor_id": "factor_0",
+    "title": "The Cultural Connoisseur",
+    "key_drivers": [
+      "Classical music",
+      "Opera",
+      "Swing, Jazz"
+    ],
+    "personality_description": "This individual possesses a sophisticated and open mindset, valuing history, complexity, and aesthetic depth over fleeting trends.",
+    "financial_prediction": {
+      "interest_area": "Value Investing & 'Old Money'",
+      "rationale": "They prefer assets with history and prestige.",
+      "specific_assets": [
+        "Blue-chip dividend stocks (e.g., Coca-Cola, J.P. Morgan)",
+        "Art Investment Funds (e.g., Masterworks)",
+        "Luxury conglomerates (e.g., LVMH)"
+      ]
+    }
+  },
+  {
+    "factor_id": "factor_1",
+    "title": "The Tech & Thrill Seeker",
+    "key_drivers": [
+      "PC",
+      "Action",
+      "Cars"
+    ],
+    "personality_description": "High in sensation-seeking and mechanically inclined, this person enjoys performance, adrenaline, and complex digital systems.",
+    "financial_prediction": {
+      "interest_area": "High-Growth Tech & Volatility",
+      "rationale": "They are comfortable with risk if the performance upside is high.",
+      "specific_assets": [
+        "Semiconductor stocks (NVIDIA, AMD)",
+        "EV manufacturers (Tesla)",
+        "Cryptocurrency"
+      ]
+    }
+  },
+  {
+    "factor_id": "factor_2",
+    "title": "The Social Optimist",
+    "key_drivers": [
+      "Energy levels",
+      "Number of friends",
+      "Happiness in life"
+    ],
+    "personality_description": "A highly extroverted and stable individual who thrives on social connection and maintains a generally positive, energetic outlook on life.",
+    "financial_prediction": {
+      "interest_area": "Consumer Discretionary & Trends",
+      "rationale": "They invest in things that facilitate connection and enjoyment.",
+      "specific_assets": [
+        "Social media giants (Meta, Snap)",
+        "Hospitality/Travel (Airbnb, Marriott)",
+        "ESG funds"
+      ]
+    }
+  },
+  {
+    "factor_id": "factor_3",
+    "title": "The Anxious Observer",
+    "key_drivers": [
+      "Storm",
+      "Rats",
+      "Snakes"
+    ],
+    "personality_description": "This profile suggests a higher sensitivity to threats (neuroticism); they are likely cautious, vigilant, and hyper-aware of risks in their environment.",
+    "financial_prediction": {
+      "interest_area": "Capital Preservation & Hedging",
+      "rationale": "They prioritize safety and protection against 'black swan' events.",
+      "specific_assets": [
+        "Gold",
+        "Insurance companies (UnitedHealth, Allstate)",
+        "Government Bonds",
+        "Cybersecurity stocks"
+      ]
+    }
+  },
+  {
+    "factor_id": "factor_4",
+    "title": "The Status Strategist",
+    "key_drivers": [
+      "Spending on looks",
+      "Knowing the right people",
+      "Branded clothing"
+    ],
+    "personality_description": "An image-conscious individual who understands social hierarchy and views appearance and networking as essential tools for success.",
+    "financial_prediction": {
+      "interest_area": "Luxury Retail & Exclusive Assets",
+      "rationale": "They understand brand equity and social signaling.",
+      "specific_assets": [
+        "High-end fashion (Kering, Hermès)",
+        "Private Equity",
+        "Hype-driven stocks"
+      ]
+    }
+  },
+  {
+    "factor_id": "factor_5",
+    "title": "The Romantic Dreamer",
+    "key_drivers": [
+      "Fantasy/Fairy tales",
+      "Animated",
+      "Romantic"
+    ],
+    "personality_description": "An imaginative and empathetic person who often prefers idealism, narrative, and emotional resonance over cold, hard logic.",
+    "financial_prediction": {
+      "interest_area": "Entertainment & 'Story Stocks'",
+      "rationale": "They buy into the vision and the narrative rather than just the balance sheet.",
+      "specific_assets": [
+        "Media giants (Disney, Netflix)",
+        "Nintendo",
+        "Space exploration stocks"
+      ]
+    }
+  },
+  {
+    "factor_id": "factor_6",
+    "title": "The Prudent Planner",
+    "key_drivers": [
+      "Prioritising workload",
+      "Reliability",
+      "Thinking ahead"
+    ],
+    "personality_description": "Highly conscientious and organized, this person values structure, dutifully meets obligations, and always has a long-term strategy.",
+    "financial_prediction": {
+      "interest_area": "Passive Indexing & Dividends",
+      "rationale": "They want predictable, steady compounding without drama.",
+      "specific_assets": [
+        "S&P 500 Index Funds (VOO)",
+        "Target Date Retirement Funds",
+        "Dividend Aristocrats"
+      ]
+    }
+  },
+  {
+    "factor_id": "factor_7",
+    "title": "The Counter-Culture Rebel",
+    "key_drivers": [
+      "Rock",
+      "Punk",
+      "Metal or Hardrock"
+    ],
+    "personality_description": "Non-conformist and intense, this individual likely questions authority and possesses a high tolerance for chaos or aggressive expression.",
+    "financial_prediction": {
+      "interest_area": "Contrarian & Anti-Establishment",
+      "rationale": "They like betting against the system or finding value in rejected sectors.",
+      "specific_assets": [
+        "Decentralized Finance (DeFi)",
+        "Cannabis stocks",
+        "Short-selling strategies",
+        "Emerging Markets"
+      ]
+    }
+  },
+  {
+    "factor_id": "factor_8",
+    "title": "The Empirical Analyst",
+    "key_drivers": [
+      "Biology",
+      "Chemistry",
+      "Medicine"
+    ],
+    "personality_description": "An analytical thinker who values objective truth, the scientific method, and education; they trust data over intuition.",
+    "financial_prediction": {
+      "interest_area": "Biotech & R&D",
+      "rationale": "They invest in innovation that can be proven and measured.",
+      "specific_assets": [
+        "Pharmaceutical giants (Pfizer, Merck)",
+        "Biotech ETFs (IBB)",
+        "Medical Devices (Thermo Fisher)",
+        "Clean Energy tech"
+      ]
+    }
+  }
+]
