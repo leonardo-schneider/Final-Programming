@@ -1,6 +1,6 @@
 .*
 __pycache__/
 
-!/.gitignore
 !/.env.example
-
+!/.gitignore
+!/.python-version
