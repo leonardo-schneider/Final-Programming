@@ -60,7 +60,7 @@ def make_survey_question(question_name, answers) -> st.radio:
 
 def render_survey_stage():
     try:
-        with open("survey_traits.json", "r") as f:
+        with open("resources/survey_traits.json", "r") as f:
             survey = {item.get("factor_id"):item.get("trait") for item in load_json(f)}
     except FileNotFoundError:
         st.error("Error: questions.json file not found.")
@@ -192,7 +192,7 @@ def render_processing_stage():
     progress_bar.progress(25, "Mapping responses...")
 
     try:
-        with open("personality_factors.json", "r") as f:
+        with open("resources/personality_factors.json", "r") as f:
             personality_factors = load_json(f)
     except Exception as e:
         st.error("Unable to fetch files necessary for the AI agent.")
@@ -279,7 +279,7 @@ def prepare_chat():
         return None
 
     try:
-        with open("prompt_tenets.txt", "r") as f:
+        with open("resources/prompt_tenets.txt", "r") as f:
             prompt_tenets = f.read()
     except Exception as e:
         st.error("Unable to fetch files necessary for the AI agent.")
