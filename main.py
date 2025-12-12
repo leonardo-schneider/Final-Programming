@@ -10,7 +10,7 @@ import streamlit_float as st_f
 import yfinance as yf
 from dotenv import load_dotenv
 from langchain.agents import create_agent
-from langchain_community.tools.tavily_search import TavilySearchResults
+from langchain_tavily import TavilySearch
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from langchain_openai import ChatOpenAI
 from pandas import DataFrame
@@ -232,7 +232,7 @@ def render_processing_stage():
         Example response: NVDA BRK-B AAPL
     """))
 
-    search_tool = TavilySearchResults(max_results=2)
+    search_tool = TavilySearch(max_results=2, topic="finance")
     tools = [search_tool]
 
     llm = ChatOpenAI(
@@ -510,7 +510,7 @@ def render_chat():
             with messages_container:
                 st.chat_message("user").write(user_message.replace("$", "\\$"))
 
-            search_tool = TavilySearchResults(max_results=2)
+            search_tool = TavilySearch(max_results=2, topic="finance")
             tools = [search_tool]
 
             llm = ChatOpenAI(
