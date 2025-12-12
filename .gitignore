@@ -1,2 +1,6 @@
-.env
-requirements.txt
+.*
+__pycache__/
+
+!/.env.example
+!/.gitignore
+!/.python-version
