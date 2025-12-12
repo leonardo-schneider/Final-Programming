@@ -166,7 +166,7 @@ def get_stock_info(tickers: list[str]) -> list[StockInfo]:
                 description = stock.info.get(
                     "longBusinessSummary",
                     "No description available.",
-                ).replace("$", "\$"),
+                ).replace("$", "\\$"),
                 news = get_finnhub_news(ticker),
             ))
 
@@ -339,7 +339,7 @@ def render_finnhub_news_cards(company_news: list[dict[str, Any]]):
         summary = article.get("summary", None) or None
         url = article.get("url", None) or None
 
-        headline = headline.replace("$", "\$")
+        headline = headline.replace("$", "\\$")
 
         if timestamp is not None:
             date_str = datetime\
@@ -362,14 +362,14 @@ def render_finnhub_news_cards(company_news: list[dict[str, Any]]):
 
                 source_date = " @ ".join(
                     data for data in (source, date_str) if data is not None
-                ).replace("$", "\$")
+                ).replace("$", "\\$")
 
                 if source_date != "":
                     st.caption(source_date)
 
             with st.container(border=False, gap=None):
                 if summary is not None:
-                    st.markdown(summary.replace("$", "\$"))
+                    st.markdown(summary.replace("$", "\\$"))
 
 
 def render_stock(stock: StockInfo):
@@ -504,11 +504,11 @@ def render_chat():
 
         if user_message := st.chat_input("⌨️"):
 
-            user_message = user_message.replace("$", "\$")
+            user_message = user_message.replace("$", "\\$")
             chat_hist.append(HumanMessage(content=user_message))
 
             with messages_container:
-                st.chat_message("user").write(user_message.replace("$", "\$"))
+                st.chat_message("user").write(user_message.replace("$", "\\$"))
 
             search_tool = TavilySearchResults(max_results=2)
             tools = [search_tool]
